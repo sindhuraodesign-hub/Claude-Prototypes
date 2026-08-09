@@ -57,13 +57,18 @@ Introducing another Polygonisation workflow inside Layer Properties would theref
 
 A broader direction being considered was to **move Subtract DEM into the Workspace**, allowing the entire workflow to happen on the map — including visualisation, filtering, Polygonisation, and its future extensions.
 
-### 4. Layer Properties direction
+### 4. Future direction of Layer Properties
 
-There was also a broader UX consideration.
+The platform currently has two side cards:
 
-The current experience can involve **multiple side cards**, while the longer-term direction is to move towards a **single, streamlined Layer Properties side card**.
+* A primary **left-side card** for the main workflows.
+* A less prominent **right-side card**, where Layer Properties currently resides.
 
-Adding more processing functionality to Layer Properties would move against this direction and make the card harder to scale.
+One of the longer-term UX directions is to move away from having two side cards and find a new, more suitable home for Layer Properties.
+
+Introducing Polygonisation into the current Layer Properties card could make this transition harder. Since Polygonisation is also expected to evolve beyond cut/fill workflows, more functionality could become coupled to a location that may eventually need to be relocated or rethought.
+
+This highlighted that we were trying to solve one part of the workflow — visualising and then polygonising — before solving the larger workflow problem.
 
 ## Decision
 
