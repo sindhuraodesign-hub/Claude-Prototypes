@@ -1,4 +1,4 @@
-# Polygonisation V2
+# Polygonisation V2 - Layer Properties Update
 
 ## Context
 
