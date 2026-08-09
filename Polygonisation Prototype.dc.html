@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Poppins',system-ui,sans-serif;background:#0d1a12}
+  a{color:#3f77c9}a:hover{color:#2f5fa8}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes toastin{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .knob{cursor:grab;touch-action:none}
+  .knob:active{cursor:grabbing}
+  input,select{font-family:'Poppins',sans-serif}
+  .seg:hover{filter:brightness(.99)}
+  .num::-webkit-outer-spin-button,.num::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .num{-moz-appearance:textfield}
+  ::selection{background:#cfe0f7}
+</style>
+</helmet>
+
+<div style="position:relative;width:1280px;height:820px;overflow:hidden;background:radial-gradient(120% 100% at 20% 10%,#274a33 0%,#1c3325 45%,#132318 100%)">
+
+  <div style="position:absolute;inset:0;background-image:linear-gradient(115deg,rgba(255,255,255,.04) 0 2px,transparent 2px 40px),linear-gradient(25deg,rgba(0,0,0,.10) 0 2px,transparent 2px 46px);opacity:.7"></div>
+
+  <svg width="920" height="820" viewBox="0 0 920 820" style="position:absolute;left:0;top:0;opacity:.35">
+    <path d="M40 120 L260 300 L340 560 L200 800" stroke="#c9c4b4" stroke-width="4" fill="none"></path>
+    <path d="M0 470 L200 500 L520 470" stroke="#c9c4b4" stroke-width="3" fill="none"></path>
+  </svg>
+
+  <!-- DEM footprint -->
+  <div style="position:absolute;left:150px;top:150px;width:560px;height:560px;clip-path:polygon(28% 0,100% 22%,72% 100%,0 78%)">
+    <div style="position:absolute;inset:0;background:#3a1250"></div>
+    <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(48deg,rgba(255,255,255,.05) 0 3px,transparent 3px 9px)"></div>
+    <div style="{{ selLayer }}"></div>
+  </div>
+
+  <div style="position:absolute;left:50%;top:22px;transform:translateX(-50%);display:flex;gap:4px;background:#fff;border-radius:9px;padding:5px;box-shadow:0 4px 14px rgba(0,0,0,.25);font-size:13px;font-weight:600">
+    <span style="padding:6px 14px;border-radius:6px;color:#7a8494">▥ 2D</span>
+    <span style="padding:6px 14px;border-radius:6px;background:#e9f0fb;color:#2f5fa8">◨ 3D</span>
+  </div>
+
+  <div style="position:absolute;right:412px;top:74px;display:flex;gap:3px;background:#fff;border-radius:9px;padding:4px;box-shadow:0 4px 14px rgba(0,0,0,.25)">
+    <div onClick="{{ setV1 }}" style="{{ vpill1 }}">V1 · form</div>
+    <div onClick="{{ setV2 }}" style="{{ vpill2 }}">V2 · histogram</div>
+    <div onClick="{{ setV3 }}" style="{{ vpill3 }}">V3 · tabs only</div>
+    <div onClick="{{ setV41 }}" style="{{ vpill41 }}">V4.1 · outputs</div>
+    <div onClick="{{ setV42 }}" style="{{ vpill42 }}">V4.2 · history</div>
+    <div onClick="{{ setV5 }}" style="{{ vpill5 }}">V5 · cut / fill</div>
+  </div>
+
+  <div style="position:absolute;left:22px;top:52px;display:flex;flex-direction:column;gap:12px">
+    <div style="width:46px;height:46px;background:#fff;border-radius:10px;box-shadow:0 3px 10px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;color:#4a5568">📏</div>
+    <div style="width:46px;height:46px;background:#fff;border-radius:10px;box-shadow:0 3px 10px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;color:#4a5568">ⓘ</div>
+    <div style="width:46px;height:46px;background:#fff;border-radius:10px;box-shadow:0 3px 10px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;color:#4a5568">🔍</div>
+  </div>
+
+  <!-- map selection readout -->
+  <div style="position:absolute;left:24px;bottom:26px;background:rgba(17,25,20,.82);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:14px 16px;color:#e8ede9;min-width:210px">
+    <div style="font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:#8fa79a;margin-bottom:8px;font-weight:600">Filtered region on map</div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600"><span style="{{ modeDotStyle }}"></span>Elevation {{ rangeMin }} to {{ rangeMax }} m</div>
+    <div style="font-size:22px;font-weight:700;margin-top:4px">{{ selAreaTxt }}<span style="font-size:12px;font-weight:500;color:#9db0a5"> ha selected</span></div>
+  </div>
+
+  <!-- ===== SIDE PANEL ===== -->
+  <div style="position:absolute;right:0;top:0;bottom:0;width:392px;background:#fff;box-shadow:-8px 0 30px rgba(0,0,0,.28);display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 22px 16px">
+      <span style="font-size:21px;font-weight:700;color:#1c2536">Layer Properties</span>
+      <span style="color:#9aa4b2;font-size:20px;cursor:pointer">✕</span>
+    </div>
+
+    <div style="display:flex;gap:22px;padding:0 22px;border-bottom:1px solid #eef0f3">
+      <div onClick="{{ setDetails }}" style="{{ tabDetailsStyle }}">Layer Details</div>
+      <div onClick="{{ setHist }}" style="{{ tabHistStyle }}">Analysis</div>
+      <sc-if value="{{ showOutputsTab }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ setOutputs }}" style="{{ tabOutputsStyle }}">Outputs</div>
+      </sc-if>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;padding:0 22px 28px">
+
+      <sc-if value="{{ isHist }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:16px 0">
+        <div onClick="{{ toggleOpacity }}" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+          <span style="font-size:15px;font-weight:600;color:#33415c">Opacity</span>
+          <span style="{{ opacityCaret }}">⌄</span>
+        </div>
+        <sc-if value="{{ opacityOpen }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:12px;margin-top:16px">
+            <input type="range" min="0" max="100" value="{{ opacity }}" onInput="{{ onOpacity }}" style="flex:1;accent-color:#3f77c9;height:4px">
+            <div style="border:1px solid #d8dce3;border-radius:7px;padding:6px 10px;font-size:13px;color:#6b7688;min-width:62px;text-align:right">{{ opacity }} %</div>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- ===== HISTOGRAM ACCORDION (original, unchanged) ===== -->
+      <div style="padding:16px 0;border-top:1px solid #f0f1f4">
+        <div onClick="{{ toggleHist }}" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+          <span style="font-size:15px;font-weight:600;color:#33415c">Elevation Profile Histogram</span>
+          <span style="{{ histCaret }}">⌄</span>
+        </div>
+
+        <sc-if value="{{ histOpen }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <sc-if value="{{ showRegionTabs }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px">
+            <div style="display:flex;border:1px solid #dfe4ec;border-radius:9px;overflow:hidden;font-size:13px;font-weight:600">
+              <sc-if value="{{ showBothSeg }}" hint-placeholder-val="{{ true }}"><div class="seg" onClick="{{ pickBoth }}" style="{{ segBothStyle }}">All</div></sc-if>
+              <div class="seg" onClick="{{ pickCut }}" style="{{ segCutStyle }}">Cut</div>
+              <div class="seg" onClick="{{ pickFill }}" style="{{ segFillStyle }}">Fill</div>
+            </div>
+            <div style="font-size:11px;color:#a7b0bd;margin-top:7px;font-style:italic">{{ v2Hint }}</div>
+          </div>
+          </sc-if>
+          <div onPointerDown="{{ startTrack }}" style="position:relative;margin-top:14px;height:150px;border:1px solid #eef0f3;border-radius:8px;background:#fff;overflow:hidden;cursor:crosshair;touch-action:none">
+            <div style="{{ selBandStyle }}"></div>
+            <svg viewBox="0 0 360 150" width="100%" height="100%" preserveAspectRatio="none" style="position:absolute;inset:0">
+              <defs>
+                <linearGradient id="cutGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a3aa8"></stop><stop offset="1" stop-color="#2a0d3a"></stop></linearGradient>
+                <linearGradient id="fillGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8e020"></stop><stop offset="1" stop-color="#3f9e3a"></stop></linearGradient>
+                <linearGradient id="bothGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e8e020"></stop><stop offset="0.5" stop-color="#2c9c7a"></stop><stop offset="1" stop-color="#3a1250"></stop></linearGradient>
+              </defs>
+              <polygon points="0,150 30,148 62,146 92,142 120,134 146,120 168,66 178,18 184,3 190,18 200,66 220,116 250,140 300,146 360,149" fill="{{ histFill }}" stroke="{{ histStroke }}" stroke-width="1.2"></polygon>
+            </svg>
+            <div style="{{ histMinLine }}"></div>
+            <div style="{{ histMaxLine }}"></div>
+            <div class="knob" onPointerDown="{{ startMin }}" style="{{ histMinGrip }}"></div>
+            <div class="knob" onPointerDown="{{ startMax }}" style="{{ histMaxGrip }}"></div>
+          </div>
+
+          <div onPointerDown="{{ startTrack }}" style="position:relative;height:26px;margin:16px 3px 6px;cursor:pointer;touch-action:none">
+            <div style="position:absolute;top:50%;left:0;right:0;height:5px;transform:translateY(-50%);background:#e7eaef;border-radius:3px"></div>
+            <div style="{{ selFillStyle }}"></div>
+            <div class="knob" onPointerDown="{{ startMin }}" style="{{ minKnobStyle }}"></div>
+            <div class="knob" onPointerDown="{{ startMax }}" style="{{ maxKnobStyle }}"></div>
+          </div>
+
+          <sc-if value="{{ showMinMax }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:16px;margin-top:10px">
+            <div style="flex:1;display:flex;align-items:center;gap:9px">
+              <span style="font-size:13px;color:#33415c;font-weight:500">Min</span>
+              <input class="num" type="number" value="{{ rangeMin }}" onInput="{{ onMinInput }}" style="flex:1;border:1px solid #d8dce3;border-radius:7px;padding:8px 10px;font-size:13px;color:#6b7688;font-weight:500">
+            </div>
+            <div style="flex:1;display:flex;align-items:center;gap:9px">
+              <span style="font-size:13px;color:#33415c;font-weight:500">Max</span>
+              <input class="num" type="number" value="{{ rangeMax }}" onInput="{{ onMaxInput }}" style="flex:1;border:1px solid #d8dce3;border-radius:7px;padding:8px 10px;font-size:13px;color:#6b7688;font-weight:500">
+            </div>
+          </div>
+          </sc-if>
+
+          <!-- ===== GENERATE POLYGONS (nested inside histogram accordion) ===== -->
+          <div style="margin-top:18px;border:1px solid #e7ebf1;border-radius:12px;background:#fbfcfe;overflow:hidden">
+            <div onClick="{{ toggleGen }}" style="display:flex;align-items:center;justify-content:space-between;padding:14px 15px;cursor:pointer">
+              <span style="display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;color:#1c2536"><span style="color:#3f77c9;font-size:16px">⬡</span>Generate Polygons</span>
+              <span style="{{ genCaret }}">⌄</span>
+            </div>
+
+            <sc-if value="{{ genOpen }}" hint-placeholder-val="{{ true }}">
+            <div style="padding:0 15px 16px">
+              <div style="font-size:11px;color:#a7b0bd;font-style:italic;margin-bottom:12px">Polygonises the region filtered above — elevation {{ rangeMin }} to {{ rangeMax }} m ({{ selAreaTxt }} ha).</div>
+
+              <sc-if value="{{ isV1 }}" hint-placeholder-val="{{ true }}">
+              <div style="font-size:11px;color:#98a2b3;margin-bottom:6px;font-weight:500">Region</div>
+              <div style="display:flex;border:1px solid #dfe4ec;border-radius:9px;overflow:hidden;font-size:13px;font-weight:600;margin-bottom:16px">
+                <div class="seg" onClick="{{ pickBoth }}" style="{{ segBothStyle }}">Both</div>
+                <div class="seg" onClick="{{ pickCut }}" style="{{ segCutStyle }}">Cut</div>
+                <div class="seg" onClick="{{ pickFill }}" style="{{ segFillStyle }}">Fill</div>
+              </div>
+              </sc-if>
+
+              <div style="display:flex;gap:12px;margin-top:16px">
+                <div style="flex:1">
+                  <div style="font-size:11px;color:#98a2b3;margin-bottom:4px;font-weight:500">Min. polygon area (m²)</div>
+                  <input class="num" type="number" value="{{ minArea }}" onInput="{{ onMinArea }}" style="width:100%;border:1px solid #d8dce3;border-radius:7px;padding:8px 10px;font-size:13px;color:#3b465a;font-weight:600">
+                </div>
+                <div style="flex:1">
+                  <div style="font-size:11px;color:#98a2b3;margin-bottom:4px;font-weight:500">Smoothing</div>
+                  <select value="{{ smoothing }}" onChange="{{ onSmoothing }}" style="width:100%;border:1px solid #d8dce3;border-radius:7px;padding:8px 9px;font-size:13px;color:#3b465a;font-weight:600;background:#fff">
+                    <option>None</option><option>Low</option><option>Medium</option><option>High</option>
+                  </select>
+                </div>
+              </div>
+
+              <sc-if value="{{ showBothName }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-top:14px">
+                <div style="font-size:11px;color:#98a2b3;margin-bottom:4px;font-weight:500">Output layer name</div>
+                <input value="{{ bothLayerName }}" onInput="{{ onBothName }}" style="width:100%;border:1px solid #d8dce3;border-radius:7px;padding:9px 11px;font-size:13px;color:#3b465a;font-weight:600">
+              </div>
+              </sc-if>
+              <sc-if value="{{ showCutName }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:14px">
+                <div style="font-size:11px;color:#98a2b3;margin-bottom:4px;font-weight:500">Cut layer name</div>
+                <input value="{{ cutLayerName }}" onInput="{{ onCutName }}" style="width:100%;border:1px solid #d8dce3;border-radius:7px;padding:9px 11px;font-size:13px;color:#3b465a;font-weight:600">
+              </div>
+              </sc-if>
+              <sc-if value="{{ showFillName }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:14px">
+                <div style="font-size:11px;color:#98a2b3;margin-bottom:4px;font-weight:500">Fill layer name</div>
+                <input value="{{ fillLayerName }}" onInput="{{ onFillName }}" style="width:100%;border:1px solid #d8dce3;border-radius:7px;padding:9px 11px;font-size:13px;color:#3b465a;font-weight:600">
+              </div>
+              </sc-if>
+
+              <sc-if value="{{ showPolyNote }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:14px;font-size:12px;color:#98a2b3;background:#f6f8fb;border:1px solid #e7ebf1;border-radius:8px;padding:10px 12px">Both regions shown for review — select <b>Cut</b> or <b>Fill</b> to polygonise.</div>
+              </sc-if>
+              <button onClick="{{ generate }}" style="{{ btnStyle }}">
+                <sc-if value="{{ generating }}" hint-placeholder-val="{{ false }}"><span style="width:15px;height:15px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:spin .7s linear infinite"></span></sc-if>
+                {{ btnLabel }}
+              </button>
+            </div>
+            </sc-if>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ showOutputsSection }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 0;border-top:1px solid #f0f1f4">
+        <div onClick="{{ toggleOutputs }}" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer">
+          <span style="display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:#33415c">Outputs<span style="font-size:11px;font-weight:700;color:#3f77c9;background:#eef2f8;border-radius:20px;padding:2px 8px">{{ outCount }}</span></span>
+          <span style="{{ outCaret }}">⌄</span>
+        </div>
+        <sc-if value="{{ outputsOpen }}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{ hasOutputs }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+            <sc-for list="{{ outputs }}" as="o" hint-placeholder-count="2">
+              <div style="{{ o.rowStyle }}">
+                <span style="{{ o.dotStyle }}"></span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:600;color:#1c2536;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ o.name }}</div>
+                  <div style="font-size:11px;color:#98a2b3;margin-top:2px">{{ o.meta }}</div>
+                </div>
+                <div style="display:flex;gap:10px;flex:0 0 auto;font-size:11px;font-weight:600">
+                  <span onClick="{{ o.toggle }}" style="cursor:pointer;color:#6b7688">{{ o.visLabel }}</span>
+                  <span onClick="{{ o.restore }}" style="cursor:pointer;color:#3f77c9">Load</span>
+                  <span onClick="{{ o.remove }}" style="cursor:pointer;color:#c07a7a">Remove</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          </sc-if>
+          <sc-if value="{{ noOutputs }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:14px;border:1px dashed #dfe4ec;border-radius:10px;padding:22px 16px;text-align:center;font-size:12px;color:#a7b0bd">No layers yet. Polygonise a region and it will be listed here.</div>
+          </sc-if>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isDetails }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:20px 0 16px">
+        <div style="font-size:14px;color:#2b3547;font-weight:500">DEM</div>
+        <div style="margin-top:14px;font-size:11px;color:#98a2b3;font-weight:500">Project</div>
+        <div style="font-size:13px;color:#7a8494">MINING - DEMO</div>
+        <div style="margin-top:12px;font-size:11px;color:#98a2b3;font-weight:500">Site</div>
+        <div style="font-size:13px;color:#7a8494">AMNS - Thakurani Mines</div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ isOutputs }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:20px 0 16px">
+        <div style="font-size:12px;color:#98a2b3;font-style:italic;margin-bottom:14px">History of polygonisation runs — select a layer to reload its elevation range.</div>
+        <sc-if value="{{ hasOutputs }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ outputs }}" as="o" hint-placeholder-count="3">
+            <div style="{{ o.rowStyle }}">
+              <span style="{{ o.dotStyle }}"></span>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;color:#1c2536;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ o.name }}</div>
+                <div style="font-size:11px;color:#98a2b3;margin-top:2px">{{ o.meta }}</div>
+              </div>
+              <div style="display:flex;gap:10px;flex:0 0 auto;font-size:11px;font-weight:600">
+                <span onClick="{{ o.toggle }}" style="cursor:pointer;color:#6b7688">{{ o.visLabel }}</span>
+                <span onClick="{{ o.restore }}" style="cursor:pointer;color:#3f77c9">Load</span>
+                <span onClick="{{ o.remove }}" style="cursor:pointer;color:#c07a7a">Remove</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
+        <sc-if value="{{ noOutputs }}" hint-placeholder-val="{{ true }}">
+        <div style="border:1px dashed #dfe4ec;border-radius:10px;padding:30px 16px;text-align:center;font-size:12px;color:#a7b0bd">No runs yet. Generate polygons from the Analysis tab.</div>
+        </sc-if>
+      </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{ showToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;right:412px;bottom:30px;background:#132318;color:#eaf3ec;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,.35);animation:toastin .3s ease both">
+      <span style="width:28px;height:28px;border-radius:50%;background:#2e9e6b;display:flex;align-items:center;justify-content:center;font-size:15px">✓</span>
+      <div><div style="font-size:13px;font-weight:600">Polygonisation complete</div><div style="font-size:11px;color:#9db0a5">{{ toastMsg }}</div></div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:820}}">
+const MIN=-23, MAX=16;
+const pct = v => (v-MIN)/(MAX-MIN)*100;
+const knobBase = {position:'absolute',top:'50%',width:'18px',height:'18px',borderRadius:'50%',background:'#fff',border:'2.5px solid #4a7fd0',transform:'translate(-50%,-50%)',boxShadow:'0 1px 4px rgba(0,0,0,.25)'};
+
+class Component extends DCLogic {
+  state = {
+    version:'v1', activeTab:'hist',
+    opacity:100, opacityOpen:true, histOpen:true, genOpen:true,
+    rangeMin:-23, rangeMax:16,
+    region:'both', minArea:25, smoothing:'Medium',
+    bothLayerName:'cut_fill_polygons_v1', cutLayerName:'cut_polygons_v1', fillLayerName:'fill_polygons_v1',
+    outputs:[], outputsOpen:true,
+    status:'idle', showToast:false, toastMsg:'', ver:1
+  };
+  PRESET = { both:{rangeMin:-23, rangeMax:16}, cut:{rangeMin:0, rangeMax:16}, fill:{rangeMin:-23, rangeMax:0} };
+  COLOR = { both:'#3f77c9', cut:'#d3652f', fill:'#3a72c9' };
+
+  componentDidMount(){
+    this._move = e => {
+      if(!this._active || !this.track) return;
+      const s=this.state;
+      const r=this.track.getBoundingClientRect();
+      let v=Math.round(MIN+((e.clientX-r.left)/r.width)*(MAX-MIN));
+      v=Math.max(MIN,Math.min(MAX,v));
+      const free = this.isFree();
+      const floorMin = (!free && s.region==='cut') ? 0 : MIN;
+      const capMax   = (!free && s.region==='fill') ? 0 : MAX;
+      const patch = this._active==='min'
+        ? {rangeMin:Math.max(floorMin,Math.min(v,s.rangeMax-1))}
+        : {rangeMax:Math.min(capMax,Math.max(v,s.rangeMin+1))};
+      this.setState(patch);
+    };
+    this._up = () => { this._active=null; };
+    window.addEventListener('pointermove',this._move);
+    window.addEventListener('pointerup',this._up);
+  }
+  componentWillUnmount(){ window.removeEventListener('pointermove',this._move); window.removeEventListener('pointerup',this._up); }
+
+  selArea(){ return (this.state.rangeMax-this.state.rangeMin)/(MAX-MIN)*42; }
+
+  defName(region,ver){ return `${region==='both'?'cut_fill':region}_polygons_v${ver}`; }
+  isFree(){ const v=this.state.version; return v==='v3'||v==='v4.2'||v==='v5'; }
+  band(lo,hi){ return Math.max(0,hi-lo)/(MAX-MIN)*42; }
+  nowLabel(){ return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+
+  effRegion(){ const s=this.state; return this.isFree() ? (s.rangeMin>=0?'cut':(s.rangeMax<=0?'fill':'both')) : s.region; }
+
+  generate(){
+    if(this.state.status==='generating') return;
+    if(this.state.version==='v5' && this.effRegion()==='both') return;
+    this.setState({status:'generating'});
+    setTimeout(()=>{
+      this.setState(s=>{
+        const reg=this.effRegion();
+        const time=this.nowLabel();
+        const cutA=this.band(Math.max(0,s.rangeMin),Math.max(0,s.rangeMax)).toFixed(1);
+        const fillA=this.band(Math.min(0,s.rangeMin),Math.min(0,s.rangeMax)).toFixed(1);
+        const totA=this.selArea().toFixed(1);
+        const mk=(name,region,area,label)=>({id:`${s.ver}-${region}`,name,region,regionLabel:label,area,time,min:s.rangeMin,max:s.rangeMax,visible:true});
+        let created;
+        if(reg==='both'){ created=[mk(s.bothLayerName,'both',totA,'Cut + Fill')]; }
+        else if(reg==='cut'){ created=[mk(s.cutLayerName,'cut',totA,'Cut')]; }
+        else { created=[mk(s.fillLayerName,'fill',totA,'Fill')]; }
+        const nv=s.ver+1;
+        const msg = `"${created[0].name}" created · ${created[0].area} ha`;
+        return {status:'done', showToast:true, toastMsg:msg, ver:nv,
+          bothLayerName:this.defName('both',nv), cutLayerName:this.defName('cut',nv), fillLayerName:this.defName('fill',nv),
+          outputs:[...created, ...s.outputs]};
+      });
+      setTimeout(()=>this.setState({status:'idle'}),1600);
+      setTimeout(()=>this.setState({showToast:false}),4200);
+    },1700);
+  }
+
+  setRegion(region){ this.setState(s=>Object.assign({region}, this.PRESET[region])); }
+  setVersion(v){ this.setState(s=>{ const p={version:v, activeTab:(s.activeTab==='outputs'&&v!=='v4.2')?'hist':s.activeTab}; if(v==='v5'&&s.region==='both'){ Object.assign(p,{region:'cut'},this.PRESET.cut); } return p; }); }
+
+  renderVals(){
+    const s=this.state;
+    const free=this.isFree();
+    const dotColor=r=>r==='cut'?'#9a4fb8':r==='fill'?'#6fbf3f':'#2fae9f';
+    const lo=pct(s.rangeMin), hi=pct(s.rangeMax);
+    const ar=this.selArea();
+    const gen=s.status==='generating';
+    const btnColor = s.status==='done' ? '#2e9e6b' : (gen?'#7c93b8':'#3f77c9');
+    const caret=open=>({transform:open?'none':'rotate(-90deg)',display:'inline-block',transition:'.2s',color:'#b3bcc9',fontSize:'13px'});
+    const segBase={flex:1,textAlign:'center',padding:'9px 6px',cursor:'pointer',color:'#8a95a5'};
+    const seg=(sel,br,c)=>Object.assign({},segBase,br?{borderRight:'1px solid #dfe4ec'}:{},sel?{background:c.bg,color:c.fg}:{});
+
+    const tab=(on)=>({padding:'13px 2px',font:"600 14px 'Poppins'",cursor:'pointer',color:on?'#1c2536':'#98a2b3',borderBottom:on?'2px solid #3f77c9':'2px solid transparent',marginBottom:'-1px',transition:'color .15s'});
+    const reg = this.effRegion();
+    const blockPoly = s.version==='v5' && reg==='both';
+    const vpill=(on)=>({padding:'6px 13px',borderRadius:'6px',cursor:'pointer',fontSize:'12px',fontWeight:600,transition:'.15s',background:on?'#1c2536':'transparent',color:on?'#fff':'#5a6577'});
+    return {
+      isV1:s.version==='v1', isV2:s.version==='v2', isV3:s.version==='v3',
+      showRegionTabs: s.version==='v2'||s.version==='v3'||s.version==='v4.1'||s.version==='v5',
+      showMinMax: true,
+      setV1:()=>this.setVersion('v1'), setV2:()=>this.setVersion('v2'), setV3:()=>this.setVersion('v3'),
+      setV41:()=>this.setVersion('v4.1'), setV42:()=>this.setVersion('v4.2'), setV5:()=>this.setVersion('v5'),
+      vpill1:vpill(s.version==='v1'), vpill2:vpill(s.version==='v2'), vpill3:vpill(s.version==='v3'),
+      vpill41:vpill(s.version==='v4.1'), vpill42:vpill(s.version==='v4.2'), vpill5:vpill(s.version==='v5'),
+      showBothSeg: true,
+      isHist:s.activeTab==='hist', isDetails:s.activeTab==='details',
+      isOutputs:s.activeTab==='outputs'&&s.version==='v4.2',
+      showOutputsTab:s.version==='v4.2',
+      setHist:()=>this.setState({activeTab:'hist'}),
+      setDetails:()=>this.setState({activeTab:'details'}),
+      setOutputs:()=>this.setState({activeTab:'outputs'}),
+      tabHistStyle:tab(s.activeTab==='hist'), tabDetailsStyle:tab(s.activeTab==='details'),
+      tabOutputsStyle:tab(s.activeTab==='outputs'),
+
+      opacity:s.opacity, opacityOpen:s.opacityOpen,
+      onOpacity:e=>this.setState({opacity:+e.target.value}),
+      toggleOpacity:()=>this.setState(x=>({opacityOpen:!x.opacityOpen})),
+      opacityCaret:caret(s.opacityOpen),
+
+      histOpen:s.histOpen, toggleHist:()=>this.setState(x=>({histOpen:!x.histOpen})),
+      histCaret:caret(s.histOpen),
+
+      rangeMin:s.rangeMin, rangeMax:s.rangeMax,
+      startMin:e=>{this.track=e.currentTarget.parentElement; this._active='min'; e.preventDefault(); e.stopPropagation();},
+      startMax:e=>{this.track=e.currentTarget.parentElement; this._active='max'; e.preventDefault(); e.stopPropagation();},
+      startTrack:e=>{
+        this.track=e.currentTarget;
+        const r=this.track.getBoundingClientRect();
+        const v=MIN+((e.clientX-r.left)/r.width)*(MAX-MIN);
+        this._active = Math.abs(v-this.state.rangeMin)<=Math.abs(v-this.state.rangeMax) ? 'min' : 'max';
+        this._move(e);
+      },
+      onMinInput:e=>{ const floor=(!free&&s.region==='cut')?0:MIN; let v=Math.max(floor,Math.min(s.rangeMax-1,+e.target.value||floor)); this.setState({rangeMin:v});},
+      onMaxInput:e=>{ const cap=(!free&&s.region==='fill')?0:MAX; let v=Math.min(cap,Math.max(s.rangeMin+1,+e.target.value||cap)); this.setState({rangeMax:v});},
+      minKnobStyle:Object.assign({},knobBase,{left:lo+'%'}),
+      maxKnobStyle:Object.assign({},knobBase,{left:hi+'%'}),
+      histMinLine:{position:'absolute',top:0,bottom:0,left:lo+'%',width:'2px',background:'#4a7fd0',pointerEvents:'none',transform:'translateX(-1px)'},
+      histMaxLine:{position:'absolute',top:0,bottom:0,left:hi+'%',width:'2px',background:'#4a7fd0',pointerEvents:'none',transform:'translateX(-1px)'},
+      histMinGrip:{position:'absolute',bottom:'6px',left:lo+'%',transform:'translateX(-50%)',width:'16px',height:'16px',borderRadius:'50%',background:'#fff',border:'2.5px solid #4a7fd0',boxShadow:'0 1px 4px rgba(0,0,0,.3)',cursor:'ew-resize'},
+      histMaxGrip:{position:'absolute',bottom:'6px',left:hi+'%',transform:'translateX(-50%)',width:'16px',height:'16px',borderRadius:'50%',background:'#fff',border:'2.5px solid #4a7fd0',boxShadow:'0 1px 4px rgba(0,0,0,.3)',cursor:'ew-resize'},
+      selFillStyle:{position:'absolute',top:'50%',height:'5px',transform:'translateY(-50%)',background:'#4a7fd0',borderRadius:'3px',left:lo+'%',width:(hi-lo)+'%'},
+      selBandStyle:{position:'absolute',top:0,bottom:0,left:lo+'%',width:(hi-lo)+'%',background:reg==='cut'?'rgba(138,58,168,.10)':reg==='fill'?'rgba(90,160,50,.12)':'rgba(47,174,159,.12)'},
+
+      histFill: 'url(#'+reg+'Grad)',
+      histStroke: reg==='cut'?'#3a1250':reg==='fill'?'#4d8a2f':'#2c7f66',
+      selLayer:{position:'absolute',inset:0,background:reg==='cut'?'#7a2f9a':reg==='fill'?'#5aa83a':'#2fae9f',mixBlendMode:'screen',opacity:0.5,transition:'opacity .35s,background .35s'},
+      modeDotStyle:{width:'10px',height:'10px',borderRadius:'3px',display:'inline-block',background:reg==='cut'?'#9a4fb8':reg==='fill'?'#6fbf3f':'#2fae9f'},
+      selAreaTxt:ar.toFixed(1),
+
+      genOpen:s.genOpen, toggleGen:()=>this.setState(x=>({genOpen:!x.genOpen})),
+      genCaret:caret(s.genOpen),
+
+      region:reg,
+      pickBoth:()=>this.setRegion('both'),
+      pickCut:()=>this.setRegion('cut'),
+      pickFill:()=>this.setRegion('fill'),
+      v2Hint: s.version==='v3'
+        ? (reg==='cut'?'Cut — drag freely; move min below 0 to switch to All.'
+          : reg==='fill'?'Fill — drag freely; move max above 0 to switch to All.'
+          : 'All — spans 0; keep min ≥ 0 for Cut or max ≤ 0 for Fill.')
+        : (reg==='cut'?'Cut — adjust both handles, cannot go below 0.'
+          : reg==='fill'?'Fill — adjust both handles, cannot go above 0.'
+          : 'All elevations — drag either handle freely.'),
+      segBothStyle: seg(reg==='both',true,{bg:'#eef2f8',fg:'#3f77c9'}),
+      segCutStyle: seg(reg==='cut',true,{bg:'#fbf0e9',fg:'#d3652f'}),
+      segFillStyle: seg(reg==='fill',false,{bg:'#eaf1fb',fg:'#3a72c9'}),
+
+      minArea:s.minArea, onMinArea:e=>this.setState({minArea:+e.target.value||0}),
+      smoothing:s.smoothing, onSmoothing:e=>this.setState({smoothing:e.target.value}),
+      showBothName: reg==='both' && !blockPoly,
+      showPolyNote: blockPoly,
+      showCutName: reg==='cut',
+      showFillName: reg==='fill',
+      bothLayerName:s.bothLayerName, onBothName:e=>this.setState({bothLayerName:e.target.value}),
+      cutLayerName:s.cutLayerName, onCutName:e=>this.setState({cutLayerName:e.target.value}),
+      fillLayerName:s.fillLayerName, onFillName:e=>this.setState({fillLayerName:e.target.value}),
+
+      showOutputsSection: s.version==='v4.1',
+      outputsOpen:s.outputsOpen, toggleOutputs:()=>this.setState(x=>({outputsOpen:!x.outputsOpen})), outCaret:caret(s.outputsOpen),
+      outCount:s.outputs.length, hasOutputs:s.outputs.length>0, noOutputs:s.outputs.length===0,
+      outputs:s.outputs.map(o=>({
+        id:o.id, name:o.name, visible:o.visible,
+        meta:`${o.regionLabel} · ${o.area} ha · ${o.time}`,
+        visLabel:o.visible?'Hide':'Show',
+        dotStyle:{width:'10px',height:'10px',borderRadius:'3px',flex:'0 0 auto',background:dotColor(o.region),opacity:o.visible?1:.35},
+        rowStyle:{display:'flex',alignItems:'center',gap:'10px',border:'1px solid #e7ebf1',borderRadius:'10px',padding:'10px 12px',background:'#fff',opacity:o.visible?1:.5},
+        toggle:()=>this.setState(st=>({outputs:st.outputs.map(x=>x.id===o.id?Object.assign({},x,{visible:!x.visible}):x)})),
+        restore:()=>this.setState({rangeMin:o.min,rangeMax:o.max}),
+        remove:()=>this.setState(st=>({outputs:st.outputs.filter(x=>x.id!==o.id)})),
+      })),
+
+      generating:gen,
+      btnStyle:{width:'100%',marginTop:'16px',border:'none',borderRadius:'9px',padding:'12px',fontFamily:'Poppins',fontSize:'14px',fontWeight:600,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',gap:'9px',transition:'background .2s',background:blockPoly?'#c7cdd6':(s.status==='done'?'#2e9e6b':(gen?'#7c93b8':'#3f77c9')),cursor:blockPoly?'not-allowed':(gen?'default':'pointer')},
+      btnLabel: blockPoly?'Select Cut or Fill to polygonise':(gen?'Polygonising…':(s.status==='done'?'✓ Done':'Polygonise  →')),
+      generate:()=>this.generate(),
+
+      showToast:s.showToast, toastMsg:s.toastMsg
+    };
+  }
+}
+</script>
+</body>
+</html>

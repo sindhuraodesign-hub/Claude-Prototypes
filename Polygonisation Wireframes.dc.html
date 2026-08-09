@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#eceae5;font-family:'Inter',system-ui,sans-serif}
+  a{color:#2a78d6}a:hover{color:#1a5fb0}
+  .dv-turn{padding:44px 48px 36px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+  .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 8px}
+  .dv-tid{font:700 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+  .dv-tname{font:600 13px/1.3 'Inter',sans-serif;color:#1a1a1a}
+  .dv-intro{font:400 12px/1.5 'Inter',sans-serif;color:rgba(0,0,0,.5);max-width:760px;margin:0 0 26px}
+  .dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+  .dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}
+  .dv-oid{font:700 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+  .dv-olabel{display:flex;align-items:baseline;gap:9px;font:400 11.5px/1.35 'Inter',sans-serif;color:rgba(0,0,0,.55);max-width:400px}
+  .dv-opt:target .dv-oid{background:#2a78d6;color:#fff}
+  .dv-next{margin:26px 0 0;font:12px/1.6 'Inter',sans-serif;color:rgba(0,0,0,.5)}
+
+  /* ---- wireframe sidecard primitives ---- */
+  .wf{width:400px;background:#fff;border:1.5px solid #2b2b2b;border-radius:10px;overflow:hidden;box-shadow:5px 6px 0 rgba(0,0,0,.10)}
+  .wf-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1.5px solid #2b2b2b}
+  .wf-title{font:700 17px 'Kalam',cursive;color:#1f1f1f}
+  .wf-x{width:20px;height:20px;border:1.5px solid #8a8a8a;border-radius:4px;color:#8a8a8a;font:600 12px 'Inter';display:flex;align-items:center;justify-content:center}
+  .wf-sec{padding:14px 18px;border-bottom:1.5px dashed #d5d5d5}
+  .wf-sec.solid{border-bottom:1.5px solid #ececec}
+  .wf-sechd{display:flex;align-items:center;justify-content:space-between;cursor:default}
+  .wf-seclbl{font:700 13px 'Kalam',cursive;letter-spacing:.2px;color:#4a4a4a}
+  .wf-seclbl.on{color:#1f1f1f}
+  .wf-chev{color:#a0a0a0;font:600 11px 'Inter'}
+  .wf-dim{opacity:.42}
+  .wf-track{position:relative;height:6px;background:#e7e7e7;border-radius:3px;margin:14px 2px}
+  .wf-fill{position:absolute;left:0;top:0;bottom:0;width:100%;background:#c7c7c7;border-radius:3px}
+  .wf-knob{position:absolute;top:50%;width:15px;height:15px;border-radius:50%;background:#fff;border:2px solid #4477c9;transform:translate(-50%,-50%)}
+  .wf-inp{border:1.5px solid #cfcfcf;border-radius:6px;padding:7px 9px;font:500 12px 'Inter';color:#666;background:#fff}
+  .wf-lbl{font:600 11px 'Inter';color:#8a8a8a;margin-bottom:5px;display:block}
+  .wf-btn{background:#1f1f1f;color:#fff;border-radius:7px;padding:11px 14px;font:700 13px 'Kalam',cursive;text-align:center;letter-spacing:.3px}
+  .wf-btn.ghost{background:#fff;color:#2b2b2b;border:1.5px solid #2b2b2b}
+  .wf-seg{display:flex;border:1.5px solid #2b2b2b;border-radius:7px;overflow:hidden;font:700 12px 'Kalam',cursive}
+  .wf-seg>div{flex:1;text-align:center;padding:8px 6px;color:#6a6a6a}
+  .wf-note{font:400 10.5px/1.4 'Inter';color:#b0b0b0;font-style:italic}
+  .cut{color:#c85a2e}.fill{color:#3a72c9}
+  .cut-bg{background:#f7ede7}.fill-bg{background:#e9f0fa}
+  .cut-bd{border-color:#c85a2e}.fill-bd{border-color:#3a72c9}
+  .chip{display:inline-flex;align-items:center;gap:6px;font:600 11px 'Inter';padding:5px 9px;border-radius:20px;border:1.5px solid}
+  .dot{width:9px;height:9px;border-radius:2px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Polygonisation of cut &amp; fill areas — 4 ways to fit it into the Layer Properties sidecard</span></div>
+  <p class="dv-intro">Same DEM + histogram context as today. Each option covers the full flow: pick cut / fill regions on the histogram → set minimum polygon area + smoothing → name the output layer → send for polygonisation. They differ in how much of the panel the flow takes over and how cut vs. fill are separated.</p>
+  <div class="dv-opts">
+
+    <!-- ============ 1a : inline accordion ============ -->
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a><span><b>Inline accordion.</b> A new collapsible "Generate Polygons" block sits under the histogram. Lowest disruption — everything stays in one scroll.</span></div>
+      <div class="wf">
+        <div class="wf-hd"><span class="wf-title">Layer Properties</span><span class="wf-x">✕</span></div>
+
+        <div class="wf-sec solid wf-dim">
+          <div class="wf-sechd"><span class="wf-seclbl">Opacity</span><span class="wf-chev">∧</span></div>
+          <div class="wf-track"><div class="wf-fill"></div><div class="wf-knob" style="left:100%"></div></div>
+        </div>
+
+        <div class="wf-sec solid">
+          <div class="wf-sechd"><span class="wf-seclbl on">Elevation Profile Histogram</span><span class="wf-chev">∧</span></div>
+          <svg viewBox="0 0 360 82" width="100%" height="74" preserveAspectRatio="none" style="margin-top:10px">
+            <rect x="0" y="0" width="150" height="82" fill="#f7ede7"/>
+            <rect x="210" y="0" width="150" height="82" fill="#e9f0fa"/>
+            <polygon points="0,82 34,80 66,78 96,74 126,66 152,52 168,20 176,4 182,20 198,52 224,68 262,77 300,80 360,82" fill="#dcdcdc" stroke="#9a9a9a" stroke-width="1"/>
+            <line x1="150" y1="0" x2="150" y2="82" stroke="#c85a2e" stroke-width="1.5" stroke-dasharray="3 3"/>
+            <line x1="210" y1="0" x2="210" y2="82" stroke="#3a72c9" stroke-width="1.5" stroke-dasharray="3 3"/>
+          </svg>
+          <div class="wf-track"><div class="wf-fill" style="left:12%;width:60%"></div><div class="wf-knob cut-bd" style="left:12%"></div><div class="wf-knob fill-bd" style="left:72%"></div></div>
+          <div style="display:flex;justify-content:space-between;font:600 10px 'Inter'"><span class="cut">◧ cut  ≤ -8</span><span class="fill">fill  ≥ 6 ◨</span></div>
+        </div>
+
+        <div class="wf-sec" style="background:#fbfaf7">
+          <div class="wf-sechd"><span class="wf-seclbl on">⬡ Generate Polygons</span><span class="wf-chev">∧</span></div>
+          <div style="margin-top:12px">
+            <span class="wf-lbl">Region</span>
+            <div class="wf-seg"><div class="cut cut-bg" style="border-right:1.5px solid #2b2b2b">Cut</div><div class="fill fill-bg" style="border-right:1.5px solid #2b2b2b">Fill</div><div style="background:#f0f0f0;color:#1f1f1f">Both</div></div>
+            <div class="wf-note" style="margin-top:6px">Uses the range filtered above ↑</div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <div style="flex:1"><span class="wf-lbl">Min area (m²)</span><div class="wf-inp">25</div></div>
+            <div style="flex:1"><span class="wf-lbl">Smoothing</span><div class="wf-inp">Medium ∨</div></div>
+          </div>
+          <div style="margin-top:12px"><span class="wf-lbl">Layer name</span><div class="wf-inp">cut_fill_polygons_v1</div></div>
+          <div class="wf-btn" style="margin-top:14px">Polygonise  →</div>
+        </div>
+
+        <div class="wf-sec wf-dim" style="border-bottom:none">
+          <div class="wf-sechd"><span class="wf-seclbl">Layer Details</span><span class="wf-chev">∨</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 1b : cut/fill tabbed histogram ============ -->
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a><span><b>Cut / Fill tabs on the histogram.</b> The histogram itself is the mode switch — pick a tab, drag one threshold, polygonise that band. Treats cut and fill as separate outputs.</span></div>
+      <div class="wf">
+        <div class="wf-hd"><span class="wf-title">Layer Properties</span><span class="wf-x">✕</span></div>
+
+        <div class="wf-sec solid wf-dim">
+          <div class="wf-sechd"><span class="wf-seclbl">Opacity</span><span class="wf-chev">∨</span></div>
+        </div>
+
+        <div class="wf-sec solid">
+          <div class="wf-sechd" style="margin-bottom:12px"><span class="wf-seclbl on">Elevation Histogram → Polygons</span><span class="wf-chev">∧</span></div>
+          <div style="display:flex;gap:8px">
+            <div class="chip cut-bd cut cut-bg" style="flex:1;justify-content:center;border-width:1.5px">● Cut</div>
+            <div class="chip" style="flex:1;justify-content:center;border-color:#d5d5d5;color:#b0b0b0">Fill</div>
+          </div>
+          <svg viewBox="0 0 360 84" width="100%" height="76" preserveAspectRatio="none" style="margin-top:12px">
+            <rect x="0" y="0" width="150" height="84" fill="#f7ede7"/>
+            <polygon points="0,84 34,82 66,80 96,75 126,66 152,52 168,20 176,4 182,20 198,52 224,68 262,78 300,81 360,84" fill="#dcdcdc" stroke="#9a9a9a" stroke-width="1"/>
+            <line x1="150" y1="0" x2="150" y2="84" stroke="#c85a2e" stroke-width="2"/>
+          </svg>
+          <div class="wf-track"><div class="wf-fill cut-bg" style="width:41%;background:#eccdbc"></div><div class="wf-knob cut-bd" style="left:41%"></div></div>
+          <div style="display:flex;align-items:center;gap:8px;font:600 11px 'Inter';color:#c85a2e"><span>Cut region: elevation ≤</span><span class="wf-inp cut" style="padding:4px 8px">-8 m</span></div>
+        </div>
+
+        <div class="wf-sec" style="background:#fbf6f2">
+          <div style="display:flex;gap:10px">
+            <div style="flex:1"><span class="wf-lbl">Min area (m²)</span><div class="wf-inp">25</div></div>
+            <div style="flex:1"><span class="wf-lbl">Smoothing</span><div class="wf-inp">Medium ∨</div></div>
+          </div>
+          <div style="margin-top:12px"><span class="wf-lbl">Layer name</span><div class="wf-inp cut">cut_polygons</div></div>
+          <div class="wf-btn cut-bg cut" style="margin-top:14px;background:#c85a2e;color:#fff;border:none">Polygonise Cut area  →</div>
+          <div class="wf-note" style="text-align:center;margin-top:8px;display:block">Switch to <b class="fill">Fill</b> tab to generate the fill layer separately</div>
+        </div>
+
+        <div class="wf-sec wf-dim" style="border-bottom:none">
+          <div class="wf-sechd"><span class="wf-seclbl">Layer Details</span><span class="wf-chev">∨</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 1c : guided wizard takeover ============ -->
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a><span><b>Guided wizard.</b> A "Polygonise" button swaps the panel into a 3-step flow: select → refine → name. Best for a deliberate, occasional action; most room per step.</span></div>
+      <div class="wf">
+        <div class="wf-hd"><span class="wf-title">← Polygonise DEM</span><span class="wf-x">✕</span></div>
+
+        <div style="display:flex;gap:8px;padding:14px 18px;border-bottom:1.5px solid #ececec">
+          <div style="flex:1;text-align:center"><div style="width:22px;height:22px;border-radius:50%;background:#1f1f1f;color:#fff;font:700 11px 'Inter';display:flex;align-items:center;justify-content:center;margin:0 auto 5px">1</div><span style="font:600 10px 'Inter';color:#1f1f1f">Select</span></div>
+          <div style="flex:1;text-align:center;opacity:.4"><div style="width:22px;height:22px;border-radius:50%;border:1.5px solid #2b2b2b;font:700 11px 'Inter';display:flex;align-items:center;justify-content:center;margin:0 auto 5px">2</div><span style="font:600 10px 'Inter'">Refine</span></div>
+          <div style="flex:1;text-align:center;opacity:.4"><div style="width:22px;height:22px;border-radius:50%;border:1.5px solid #2b2b2b;font:700 11px 'Inter';display:flex;align-items:center;justify-content:center;margin:0 auto 5px">3</div><span style="font:600 10px 'Inter'">Name</span></div>
+        </div>
+
+        <div class="wf-sec" style="border-bottom:none">
+          <div class="wf-seclbl on" style="margin-bottom:4px">Step 1 · Select regions</div>
+          <div class="wf-note" style="display:block;margin-bottom:12px">Drag the handles to filter the elevation range shown on the map.</div>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <div class="chip cut-bd cut cut-bg" style="flex:1;justify-content:center">✓ Cut</div>
+            <div class="chip fill-bd fill fill-bg" style="flex:1;justify-content:center">✓ Fill</div>
+          </div>
+          <svg viewBox="0 0 360 96" width="100%" height="92" preserveAspectRatio="none">
+            <rect x="0" y="0" width="150" height="96" fill="#f7ede7"/>
+            <rect x="210" y="0" width="150" height="96" fill="#e9f0fa"/>
+            <polygon points="0,96 34,93 66,90 96,84 126,74 152,58 168,22 176,4 182,22 198,58 224,76 262,88 300,92 360,96" fill="#dcdcdc" stroke="#9a9a9a" stroke-width="1"/>
+            <line x1="150" y1="0" x2="150" y2="96" stroke="#c85a2e" stroke-width="1.5" stroke-dasharray="3 3"/>
+            <line x1="210" y1="0" x2="210" y2="96" stroke="#3a72c9" stroke-width="1.5" stroke-dasharray="3 3"/>
+          </svg>
+          <div class="wf-track"><div class="wf-fill" style="left:12%;width:60%"></div><div class="wf-knob cut-bd" style="left:12%"></div><div class="wf-knob fill-bd" style="left:72%"></div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px">
+            <div class="chip cut-bd cut" style="border-width:1.5px"><span class="dot cut-bg" style="background:#c85a2e"></span>Cut ≤ -8 m</div>
+            <div class="chip fill-bd fill" style="border-width:1.5px"><span class="dot" style="background:#3a72c9"></span>Fill ≥ 6 m</div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:18px">
+            <div class="wf-btn ghost" style="flex:1">Cancel</div>
+            <div class="wf-btn" style="flex:2">Next: Refine  →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 1d : docked action bar + sheet ============ -->
+    <div class="dv-opt" id="1d">
+      <div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a><span><b>Docked bar → summary sheet.</b> Panel stays as-is; a pinned "Create Polygons" bar opens a compact sheet that reads back the current cut/fill filter as chips, then just needs params + name.</span></div>
+      <div class="wf" style="position:relative">
+        <div class="wf-hd"><span class="wf-title">Layer Properties</span><span class="wf-x">✕</span></div>
+        <div class="wf-sec solid wf-dim">
+          <div class="wf-sechd"><span class="wf-seclbl">Opacity</span><span class="wf-chev">∨</span></div>
+        </div>
+        <div class="wf-sec solid wf-dim">
+          <div class="wf-sechd"><span class="wf-seclbl">Elevation Profile Histogram</span><span class="wf-chev">∨</span></div>
+        </div>
+
+        <!-- raised sheet -->
+        <div style="margin:8px;border:1.5px solid #2b2b2b;border-radius:10px;background:#fff;box-shadow:0 -4px 0 rgba(0,0,0,.05),3px 4px 0 rgba(0,0,0,.08);overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1.5px solid #ececec">
+            <span style="font:700 14px 'Kalam',cursive">⬡ Create Polygons</span><span style="font:600 14px 'Inter';color:#bbb">⌄</span>
+          </div>
+          <div style="padding:14px">
+            <span class="wf-lbl">Filtered from histogram</span>
+            <div style="display:flex;gap:8px;margin-bottom:14px">
+              <div class="chip cut-bd cut" style="border-width:1.5px"><span class="dot" style="background:#c85a2e"></span>Cut ≤ -8 m</div>
+              <div class="chip fill-bd fill" style="border-width:1.5px"><span class="dot" style="background:#3a72c9"></span>Fill ≥ 6 m</div>
+              <span class="wf-note" style="align-self:center">edit ✎</span>
+            </div>
+            <div style="display:flex;gap:10px">
+              <div style="flex:1"><span class="wf-lbl">Min area (m²)</span><div class="wf-inp">25</div></div>
+              <div style="flex:1"><span class="wf-lbl">Smoothing</span><div class="wf-inp">Medium ∨</div></div>
+            </div>
+            <div style="margin-top:12px"><span class="wf-lbl">Layer name</span><div class="wf-inp">cut_fill_polygons_v1</div></div>
+            <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font:500 11px 'Inter';color:#777"><span style="width:15px;height:15px;border:1.5px solid #999;border-radius:4px;display:inline-block"></span>Split cut &amp; fill into separate layers</label>
+            <div class="wf-btn" style="margin-top:14px">Send for Polygonisation  →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "expand the <a class="dv-oid" href="#1c">1c</a> wizard's step 2 &amp; 3" · "show <a class="dv-oid" href="#1b">1b</a>'s fill tab + the post-generate result state" · "merge <a class="dv-oid" href="#1a">1a</a>'s inline block with <a class="dv-oid" href="#1d">1d</a>'s chip summary" · "make these hi-fi in the real panel style"</p>
+</section>
+</x-dc>
+</body>
+</html>
