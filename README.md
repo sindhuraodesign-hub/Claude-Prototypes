@@ -1,65 +1,84 @@
-Polygonisation V2 — SME Input & Solution Exploration
-SME Input
-The key requirement from the SME was that users should be able to visualise cut/fill regions on the map, filter out noise, and then polygonise the selected regions.
+# Polygonisation V2
 
-Initial Solution Explored
-The most obvious solution was to introduce Polygonisation within the Layer Properties card, alongside the existing histogram.
+## Context
 
-The ideation explored a workflow where users could:
+Based on SME input, the goal for Polygonisation V2 was to allow users to:
 
-Use the histogram to control which parts of the DEM are visualised as cut/fill regions.
-Apply thresholds to reduce noise.
-Visualise the resulting cut/fill regions directly on the map.
-Define polygonisation parameters such as minimum polygon area, layer name, etc.
-Generate multiple cut/fill polygon layers from a Subtract DEM based on the selected histogram ranges.
-In essence, the goal was to allow users to use the histogram to control which parts of a Subtract DEM are polygonised, rather than immediately polygonising the entire output.
+* Visualise **cut/fill regions** on the map.
+* Filter out noise using thresholds.
+* Polygonise the selected regions.
+* Generate multiple cut/fill polygon layers from a Subtract DEM.
 
-View prototypes here → [Prototype link]
+The proposed workflow used the existing **histogram in Layer Properties** to control which parts of the DEM were visualised and subsequently polygonised.
 
-Why the Solution Was Put on Hold
-The solution raised a few larger product and architecture questions.
+## Solution Explored
 
-1. Polygonisation is only relevant to certain DEMs
-Currently, the platform does not differentiate between continuous DEMs and Difference/Subtract DEMs.
+The initial direction was to introduce Polygonisation directly within the **Layer Properties** card, alongside the histogram.
 
-However, this workflow is specifically useful for Difference DEMs because they contain cut/fill information. This meant that the Polygonisation tool would only be available for a DEM containing the relevant type of data.
+The workflow explored:
 
-This raised a broader question around whether the platform should explicitly differentiate between different types of DEMs.
+1. Use the histogram to select the cut/fill ranges to visualise.
+2. Apply thresholds to reduce noise.
+3. Preview the resulting regions directly on the map.
+4. Configure polygonisation parameters such as minimum polygon area and layer name.
+5. Generate polygon layers from the selected regions.
 
-The team was not aligned on introducing this distinction itself. While some felt that differentiating between continuous and Difference DEMs would make the product behaviour clearer, others felt that introducing separate DEM types was unnecessary.
+**[View prototypes here →](#)**
 
-Regardless of whether we formally introduced the distinction, the Polygonisation tool would still need to be conditionally available based on the type of data contained in the DEM.
+## Challenges Identified
 
-This made the proposed solution more tightly coupled to a larger product decision that had not yet been resolved.
+### 1. DEM types and data differentiation
 
-2. The future direction of Polygonisation is broader
-The longer-term direction is for Polygonisation to potentially work with other raster types as well, with different inputs depending on the raster being processed.
+The platform currently does not differentiate between **continuous DEMs** and **Difference/Subtract DEMs**.
 
-This raised concerns about continuing to add more functionality into the Layer Properties side card. What started as a focused Polygonisation workflow could eventually make the card increasingly complex and difficult to scale.
+However, this Polygonisation workflow is specifically useful when the DEM contains cut/fill data. This means the tool would need to be available only when the underlying DEM contains the relevant data.
 
-3. It only solved part of the larger workflow
-The proposed solution solved an important part of the workflow — visualising cut/fill regions, filtering noise, and then polygonising them.
+This raised a larger product question: **should the platform explicitly differentiate between different types of DEMs?**
 
-However, it did not address the larger question of where the overall Subtract DEM workflow should live.
+The team was not fully aligned on this. Some felt that having distinct DEM types would make the behaviour clearer, while others felt that introducing this distinction was unnecessary.
 
-Today, users already receive cut/fill regions as a by-product of Subtract DEM, which gives them an existing way to access and polygonise those results.
+Regardless of whether the distinction was formally introduced, the Polygonisation tool would still need to be conditionally available based on the data contained in the DEM.
 
-Introducing another Polygonisation workflow within Layer Properties would therefore add a new path for achieving something that is already partially supported, while also introducing the complexity of handling different types of DEM data.
+### 2. Future scope of Polygonisation
 
-The broader direction being considered is to move Subtract DEM into the Workspace, so that the entire workflow — including visualisation, filtering, polygonisation, and its future extensions — can happen together on the map.
+The longer-term direction for Polygonisation is broader than just cut/fill data. It could eventually be applied to other raster types, with different inputs and parameters depending on the raster.
 
-This felt like a more scalable direction than introducing a new capability into Layer Properties primarily to solve one part of the existing workflow.
+Adding the feature directly into Layer Properties therefore risked making the side card increasingly complex and coupling a broader raster-processing workflow to the Layer Properties experience.
 
-4. Direction of Layer Properties
+### 3. Solving only part of the workflow
+
+The proposed solution addressed an important gap: **visualising, filtering, and then polygonising cut/fill regions**.
+
+However, it only solved part of the larger Subtract DEM workflow.
+
+Today, Subtract DEM already generates cut/fill regions as a by-product, giving users an existing way to work with these outputs.
+
+Introducing another Polygonisation workflow inside Layer Properties would therefore add a new path while also introducing additional complexity around DEM types and conditional functionality.
+
+A broader direction being considered was to **move Subtract DEM into the Workspace**, allowing the entire workflow to happen on the map — including visualisation, filtering, Polygonisation, and its future extensions.
+
+### 4. Layer Properties direction
+
 There was also a broader UX consideration.
 
-We want to move away from the current pattern of double side cards and eventually redesign Layer Properties around a single, more streamlined side card.
+The current experience can involve **multiple side cards**, while the longer-term direction is to move towards a **single, streamlined Layer Properties side card**.
 
-Adding Polygonisation into the existing Layer Properties experience would increase the amount of functionality being placed there, while the longer-term direction is actually to simplify and rethink the Layer Properties structure.
+Adding more processing functionality to Layer Properties would move against this direction and make the card harder to scale.
 
-Decision
-The team decided not to proceed with the proposed Polygonisation V2 solution within Layer Properties.
+## Decision
 
-The decision was not because the workflow itself was not valuable. Rather, the effort and complexity required to introduce it in the current architecture did not justify the benefit, especially given the direction of the product.
+The team decided **not to proceed with the proposed Polygonisation V2 workflow within Layer Properties**.
 
-The more scalable direction is to solve the larger Subtract DEM workflow at the Workspace level, where visualisation, filtering, polygonisation, and future raster-processing capabilities can eventually come together as part of a broader map-based workflow.
+The decision was not because the workflow itself lacked value. Rather, the **effort and complexity required to introduce it within the current structure did not justify the benefit**, particularly given the broader product direction.
+
+Instead, the focus should move towards solving the **larger Subtract DEM workflow at the Workspace level**.
+
+This provides a more scalable foundation for bringing together:
+
+* Subtract DEM
+* Cut/fill visualisation
+* Noise filtering
+* Polygonisation
+* Future raster-processing capabilities
+
+This direction also avoids introducing a new workflow into Layer Properties that would later need to be reworked as the broader raster-processing experience evolves.
